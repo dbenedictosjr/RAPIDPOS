@@ -1,0 +1,34 @@
+USE [GOLF_WAREHOUSE]
+GO
+
+/****** Object:  Trigger [dbo].[trg_PS_DOC_LIN_Insert]    Script Date: 6/16/2024 7:00:27 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE TRIGGER [dbo].[trg_PS_DOC_LIN_Insert]
+ON [dbo].[PS_DOC_LIN]
+AFTER INSERT
+AS
+BEGIN
+	INSERT INTO USER_SUGGESTED_REPLENISHMENT(DOC_ID, ITEM_NO, LOC_ID, QTY)
+	SELECT	
+		a.DOC_ID,
+		a.ITEM_NO, 
+		a.STR_ID, 
+		b.MAX_QTY-(b.QTY_AVAIL - a.QTY_SOLD) -- suggested qty
+	FROM	inserted a
+	INNER JOIN IM_INV b 
+		ON b.ITEM_NO = a.ITEM_NO
+		AND b.LOC_ID = a.STR_ID
+	WHERE	(b.QTY_AVAIL - a.QTY_SOLD) < = b.MIN_QTY
+END;
+GO
+
+ALTER TABLE [dbo].[PS_DOC_LIN] ENABLE TRIGGER [trg_PS_DOC_LIN_Insert]
+GO
+
+
